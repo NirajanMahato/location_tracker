@@ -7,6 +7,10 @@ export const config = {
   },
 };
 
+interface ServerWithIO {
+  io?: ServerIO;
+}
+
 const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
   if (!res.socket) {
     res.status(500).json({ error: "Socket not available" });
@@ -14,7 +18,7 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   // Type assertion to access the server
-  const server = (res.socket as any).server;
+  const server = (res.socket as unknown as { server: ServerWithIO }).server;
 
   if (server.io) {
     console.log("Socket is already running");
@@ -24,7 +28,8 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
   console.log("Setting up socket");
 
-  const io = new ServerIO(server, {
+  // Create Socket.IO server with proper configuration
+  const io = new ServerIO(server as any, {
     path: "/api/socket",
     addTrailingSlash: false,
     cors: {

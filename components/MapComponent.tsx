@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Socket } from "socket.io-client";
 
 interface MapComponentProps {
@@ -86,14 +86,17 @@ export default function MapComponent({
   const [isMapReady, setIsMapReady] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  const geolocationOptions = {
-    enableHighAccuracy:
-      process.env.NEXT_PUBLIC_GEOLOCATION_HIGH_ACCURACY === "true",
-    maximumAge: parseInt(
-      process.env.NEXT_PUBLIC_GEOLOCATION_MAX_AGE || "10000"
-    ),
-    timeout: parseInt(process.env.NEXT_PUBLIC_GEOLOCATION_TIMEOUT || "15000"),
-  };
+  const geolocationOptions = useMemo(
+    () => ({
+      enableHighAccuracy:
+        process.env.NEXT_PUBLIC_GEOLOCATION_HIGH_ACCURACY === "true",
+      maximumAge: parseInt(
+        process.env.NEXT_PUBLIC_GEOLOCATION_MAX_AGE || "10000"
+      ),
+      timeout: parseInt(process.env.NEXT_PUBLIC_GEOLOCATION_TIMEOUT || "15000"),
+    }),
+    []
+  );
 
   const updateStatus = useCallback(
     (message: string, type: "success" | "error" | "info") => {
