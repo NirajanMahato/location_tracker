@@ -24,15 +24,24 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
   console.log("Setting up socket");
 
-  // Create Socket.IO server with proper configuration
   const io = new ServerIO(server, {
     path: "/api/socket",
     addTrailingSlash: false,
     cors: {
       origin:
         process.env.NODE_ENV === "production"
-          ? process.env.NEXT_PUBLIC_SITE_URL || "https://yourdomain.com"
-          : ["http://localhost:3000", "http://localhost:3001"],
+          ? ([
+              process.env.NEXT_PUBLIC_SITE_URL,
+              process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : null,
+              process.env.DOMAIN_URL,
+            ].filter(Boolean) as string[])
+          : [
+              "http://localhost:3000",
+              "http://localhost:3001",
+              "http://127.0.0.1:3000",
+            ],
       methods: ["GET", "POST"],
       credentials: true,
     },

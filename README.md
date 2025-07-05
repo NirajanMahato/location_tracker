@@ -42,9 +42,11 @@ A real-time location tracking application built with Next.js, Socket.IO, and Lea
 4. **Open your browser:**
    Navigate to `http://localhost:3000`
 
-### Environment Variables (Optional)
+### Environment Variables
 
-Create a `.env.local` file in the root directory:
+#### Development (Optional)
+
+Create a `.env.local` file in the root directory for custom configuration:
 
 ```env
 # Socket.IO Configuration
@@ -61,6 +63,22 @@ NEXT_PUBLIC_MAP_ATTRIBUTION=© OpenStreetMap contributors
 
 # Location Data Settings
 NEXT_PUBLIC_LOCATION_DATA_EXPIRY=30000
+```
+
+#### Production Deployment
+
+Set these environment variables in your hosting platform:
+
+```env
+# Required for production
+NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+NEXT_PUBLIC_SOCKET_URL=https://yourdomain.com
+
+# Optional: Custom domain (if different from NEXT_PUBLIC_SITE_URL)
+DOMAIN_URL=https://www.yourdomain.com
+
+# Vercel automatically provides this
+VERCEL_URL=your-project.vercel.app
 ```
 
 ## Usage
