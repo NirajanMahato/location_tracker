@@ -1,3 +1,4 @@
+import { Server as NetServer } from "http";
 import { NextApiRequest, NextApiResponse } from "next";
 import { Server as ServerIO } from "socket.io";
 
@@ -7,7 +8,7 @@ export const config = {
   },
 };
 
-interface ServerWithIO {
+interface ServerWithIO extends NetServer {
   io?: ServerIO;
 }
 
@@ -29,7 +30,7 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
   console.log("Setting up socket");
 
   // Create Socket.IO server with proper configuration
-  const io = new ServerIO(server as any, {
+  const io = new ServerIO(server as ServerWithIO, {
     path: "/api/socket",
     addTrailingSlash: false,
     cors: {
