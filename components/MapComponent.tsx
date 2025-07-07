@@ -19,7 +19,6 @@ interface LocationData {
   timestamp: number;
 }
 
-// Leaflet types
 interface LeafletMap {
   setView: (coords: [number, number], zoom: number) => LeafletMap;
   addLayer: (layer: LeafletLayer) => LeafletMap;
@@ -85,11 +84,12 @@ export default function MapComponent({
   const watchIdRef = useRef<number | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [locationPermission, setLocationPermission] =
+    useState<PermissionState | null>(null);
 
   const geolocationOptions = useMemo(
     () => ({
-      enableHighAccuracy:
-        process.env.NEXT_PUBLIC_GEOLOCATION_HIGH_ACCURACY === "true",
+      enableHighAccuracy: true, // Force high accuracy for better iOS support
       maximumAge: parseInt(
         process.env.NEXT_PUBLIC_GEOLOCATION_MAX_AGE || "10000"
       ),
@@ -104,6 +104,48 @@ export default function MapComponent({
     },
     [onStatusChange]
   );
+
+  const checkLocationPermission = useCallback(async () => {
+    if (!navigator.permissions) {
+      // Fallback for browsers that don't support permissions API
+      return "granted";
+    }
+
+    try {
+      const permission = await navigator.permissions.query({
+        name: "geolocation" as PermissionName,
+      });
+      setLocationPermission(permission.state);
+      return permission.state;
+    } catch (error) {
+      console.warn(
+        "Permissions API not supported, falling back to direct geolocation request"
+      );
+      return "prompt";
+    }
+  }, []);
+
+  const requestLocationPermission = useCallback(() => {
+    updateStatus("Requesting location permission...", "info");
+
+    // For iOS Safari, we need to trigger a user gesture
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          updateStatus("Location permission granted", "success");
+          setLocationPermission("granted");
+          handleLocationSuccess(position);
+        },
+        (error) => {
+          handleLocationError(error);
+          setLocationPermission("denied");
+        },
+        geolocationOptions
+      );
+    } else {
+      updateStatus("Geolocation is not supported by this browser.", "error");
+    }
+  }, [updateStatus, geolocationOptions]);
 
   const handleLocationSuccess = useCallback(
     (position: GeolocationPosition) => {
@@ -170,16 +212,17 @@ export default function MapComponent({
       switch (error.code) {
         case error.PERMISSION_DENIED:
           errorMessage =
-            "Location permission denied. Please enable location access.";
+            "Location permission denied. Please enable location access in your browser settings.";
           break;
         case error.POSITION_UNAVAILABLE:
-          errorMessage = "Location information unavailable.";
+          errorMessage =
+            "Location information unavailable. Please check your GPS settings.";
           break;
         case error.TIMEOUT:
-          errorMessage = "Location request timed out.";
+          errorMessage = "Location request timed out. Please try again.";
           break;
         default:
-          errorMessage = "An unknown error occurred.";
+          errorMessage = "An unknown error occurred while getting location.";
       }
 
       updateStatus(errorMessage, "error");
@@ -293,17 +336,27 @@ export default function MapComponent({
   useEffect(() => {
     if (!isMapReady) return;
 
-    if (navigator.geolocation) {
-      updateStatus("Requesting location access...", "info");
-
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        handleLocationSuccess,
-        handleLocationError,
-        geolocationOptions
-      );
-    } else {
-      updateStatus("Geolocation is not supported by this browser.", "error");
-    }
+    // Check location permission first
+    checkLocationPermission().then((permission) => {
+      if (permission === "granted") {
+        // Start watching location
+        if (navigator.geolocation) {
+          updateStatus("Starting location tracking...", "info");
+          watchIdRef.current = navigator.geolocation.watchPosition(
+            handleLocationSuccess,
+            handleLocationError,
+            geolocationOptions
+          );
+        }
+      } else if (permission === "prompt") {
+        updateStatus("Click 'Allow Location' to start tracking", "info");
+      } else {
+        updateStatus(
+          "Location permission denied. Please enable location access.",
+          "error"
+        );
+      }
+    });
 
     return () => {
       if (watchIdRef.current) {
@@ -312,6 +365,7 @@ export default function MapComponent({
     };
   }, [
     isMapReady,
+    checkLocationPermission,
     handleLocationSuccess,
     handleLocationError,
     geolocationOptions,
@@ -407,10 +461,33 @@ export default function MapComponent({
   }
 
   return (
-    <div
-      ref={mapRef}
-      className="w-full h-full"
-      style={{ minHeight: "400px" }}
-    />
+    <div className="w-full h-full relative">
+      <div
+        ref={mapRef}
+        className="w-full h-full"
+        style={{ minHeight: "400px" }}
+      />
+
+      {/* Location Permission Button for iOS */}
+      {isMapReady && locationPermission !== "granted" && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm mx-4 text-center">
+            <h3 className="text-lg font-semibold mb-2">
+              Location Access Required
+            </h3>
+            <p className="text-gray-600 mb-4">
+              This app needs location access to show your position on the map
+              and share it with other users.
+            </p>
+            <button
+              onClick={requestLocationPermission}
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Allow Location Access
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
