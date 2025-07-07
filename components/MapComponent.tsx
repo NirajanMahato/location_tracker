@@ -117,7 +117,7 @@ export default function MapComponent({
       });
       setLocationPermission(permission.state);
       return permission.state;
-    } catch (error) {
+    } catch {
       console.warn(
         "Permissions API not supported, falling back to direct geolocation request"
       );
@@ -145,7 +145,12 @@ export default function MapComponent({
     } else {
       updateStatus("Geolocation is not supported by this browser.", "error");
     }
-  }, [updateStatus, geolocationOptions]);
+  }, [
+    updateStatus,
+    geolocationOptions,
+    handleLocationSuccess,
+    handleLocationError,
+  ]);
 
   const handleLocationSuccess = useCallback(
     (position: GeolocationPosition) => {
