@@ -125,33 +125,6 @@ export default function MapComponent({
     }
   }, []);
 
-  const requestLocationPermission = useCallback(() => {
-    updateStatus("Requesting location permission...", "info");
-
-    // For iOS Safari, we need to trigger a user gesture
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          updateStatus("Location permission granted", "success");
-          setLocationPermission("granted");
-          handleLocationSuccess(position);
-        },
-        (error) => {
-          handleLocationError(error);
-          setLocationPermission("denied");
-        },
-        geolocationOptions
-      );
-    } else {
-      updateStatus("Geolocation is not supported by this browser.", "error");
-    }
-  }, [
-    updateStatus,
-    geolocationOptions,
-    handleLocationSuccess,
-    handleLocationError,
-  ]);
-
   const handleLocationSuccess = useCallback(
     (position: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = position.coords;
@@ -252,6 +225,33 @@ export default function MapComponent({
     handleLocationSuccess,
     handleLocationError,
     geolocationOptions,
+  ]);
+
+  const requestLocationPermission = useCallback(() => {
+    updateStatus("Requesting location permission...", "info");
+
+    // For iOS Safari, we need to trigger a user gesture
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          updateStatus("Location permission granted", "success");
+          setLocationPermission("granted");
+          handleLocationSuccess(position);
+        },
+        (error) => {
+          handleLocationError(error);
+          setLocationPermission("denied");
+        },
+        geolocationOptions
+      );
+    } else {
+      updateStatus("Geolocation is not supported by this browser.", "error");
+    }
+  }, [
+    updateStatus,
+    geolocationOptions,
+    handleLocationSuccess,
+    handleLocationError,
   ]);
 
   const resetMapRotation = useCallback(() => {
